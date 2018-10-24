@@ -3,8 +3,10 @@ package com.example.demo.service;
 
 import com.example.demo.dao.UserMapper;
 import com.example.demo.entity.User;
+import com.example.demo.util.SerializeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import redis.clients.jedis.Jedis;
 
 /**
  * @ClassName UserService
@@ -19,7 +21,16 @@ public class UserService {
     private UserMapper userMapper;
 
     public User selectByPrimaryKey(int id){
-        return userMapper.selectByPrimaryKey(id);
+        Jedis jedis = new Jedis();
+        byte[] bytes = jedis.get("user".getBytes());
+        User user = null;
+        if(bytes != null && bytes.length > 0){
+            user = (User)SerializeUtil.unserialize(bytes);
+        }else{
+            user = userMapper.selectByPrimaryKey(id);
+            jedis.set("user".getBytes(),SerializeUtil.serialize(user));
+        }
+        return user;
     }
 }
 
